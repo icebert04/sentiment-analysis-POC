@@ -7,11 +7,11 @@ _______
 
 ## Description
 
-The user can Type in a keyword for the bot to scrape [Hacker News](https://news.ycombinator.com/), and then it will rate the article titles that match the keyword and rate it with (positive, negative, & neutral).
+The user can Type in a keyword for the bot to scrape [Hacker News](https://news.ycombinator.com/), and then it will rate the article titles that match the keyword and rate it with (positive, negative, or neutral).
 
-![one input next to two buttons, analyze, & clear results with some results at the bottom](/path/SentimentFrontend.png)
+![one input next to two buttons, analyze, & clear results with some results at the bottom](/public/SentimentFrontend.png)
 
-Here we typed "Cannabis" as this was the only Noun with an understandable subject for the bot to score.
+Here we typed "Cannabis" as this was the only noun with a suitable subject for the bot to score.
 
 As you can see the bot recognizes this as a negative sentence.
 
@@ -21,7 +21,7 @@ ____
 
 Here is the Jupyter Notebook where the bot runs
 
-![Two python files in a Jupyter Notebook App](/path/SentimentJupyter.png)
+![Two python files in a Jupyter Notebook App](/public/SentimentJupyter.png)
 
 The Bot uses the NLTK Vader for the Sentiment Analysis
 
