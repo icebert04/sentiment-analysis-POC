@@ -1,77 +1,84 @@
 import requests
 from bs4 import BeautifulSoup
+from nltk.sentiment.vader import SentimentIntensityAnalyzer  # Import VADER
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app, resources={r"/search": {"origins": "http://localhost:3000"}}, methods=["POST"])
 
+# Initialize the VADER sentiment analyzer (global variable)
+sia = SentimentIntensityAnalyzer()
+
 # Function to perform the search
 def perform_search(keyword):
     try:
         # Construct the search URL with the user's keyword
         search_url = f'https://hn.algolia.com/?q={keyword}'
-
+        print("Performing search with keyword:", keyword)
+        print("Search URL:", search_url)  # Print the search URL
         response = requests.get(search_url)
         if response.status_code == 200:
-            print("Request successful. Parsing HTML...")
-            soup = BeautifulSoup(response.text, 'html.parser')
-
-            # Now you can parse the search results page using BeautifulSoup
-            # Your scraping logic here
-
-            # Return the extracted data
-            # return extracted_data
+            print("Request successful. Parsing HTML... Status Code:", response.status_code)
+            # Pass the URL to analyze_brand_comments and capture the results
+            search_results = analyze_brand_comments(search_url, keyword)
+            if search_results:
+                return search_results  # Return the results
         else:
             print(f'Failed to fetch search results. Status code: {response.status_code}')
             return None
     except Exception as e:
         print(f'Error: {e}')
         return None
-        
+
 # Function to scrape comments, analyze sentiment, and classify
 def analyze_brand_comments(url, keyword=None):
-    # Send an HTTP request to the target URL
-    response = requests.get(url)
+    try:
+        # Send an HTTP request to the target URL
+        response = requests.get(url)
 
-    # Check if the request was successful
-    if response.status_code == 200:
-        # Parse the HTML content
-        soup = BeautifulSoup(response.content, "html.parser")
+        # Check if the request was successful
+        if response.status_code == 200:
+            print("Request to", url, "successful. Parsing HTML...")
 
-        # Extract article titles from the specified class ("Story_title")
-        article_titles = [a.text for a in soup.select(".Story_title span")]
+            # Parse the HTML content
+            soup = BeautifulSoup(response.content, "html.parser")
 
-        # Process and analyze comments from each article title
-        results = []
+            # Extract article titles from the specified class ("Story_title")
+            article_titles = [a.text for a in soup.select(".Story_title span")]
 
-        for article_title in article_titles:
-            title_text = article_title
+            # Process and analyze comments from each article title
+            results = []
 
-            # Check if the keyword is in the article title
-            if keyword is not None and keyword.lower() in title_text.lower():
-                # Perform sentiment analysis on the article title
-                title_text = truncate_text(title_text, 100)  # Truncate for display
-                sentiment_scores = sia.polarity_scores(title_text)
+            for article_title in article_titles:
+                title_text = article_title
 
-                # Determine sentiment based on compound score
-                compound_score = sentiment_scores['compound']
+                # Check if the keyword is in the article title
+                if keyword is not None and keyword.lower() in title_text.lower():
+                    # Perform sentiment analysis on the article title using sia
+                    sentiment_scores = sia.polarity_scores(title_text)
 
-                if compound_score >= 0.05:
-                    sentiment = "positive"
-                elif compound_score <= -0.05:
-                    sentiment = "negative"
-                else:
-                    sentiment = "neutral"
+                    # Determine sentiment based on compound score
+                    compound_score = sentiment_scores['compound']
 
-                # Add the result to the list
-                results.append({"keyword": keyword, "article_title": title_text, "sentiment": sentiment})
+                    if compound_score >= 0.05:
+                        sentiment = "positive"
+                    elif compound_score <= -0.05:
+                        sentiment = "negative"
+                    else:
+                        sentiment = "neutral"
 
-        # Return the list of results
-        return results
+                    # Add the result to the list
+                    results.append({"keyword": keyword, "article_title": title_text, "sentiment": sentiment})
 
-    # Return an empty list when no matching articles are found
-    return []
+            # Return the list of results
+            return results
+
+        # Return an empty list when no matching articles are found
+        return []
+    except Exception as e:
+        print(f'Error in analyze_brand_comments: {e}')
+        return None
 
 @app.route('/search', methods=['POST'])
 def search_endpoint():
